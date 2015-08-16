@@ -1,0 +1,4 @@
+schemasync/
+*.key.bin
+
+__pycache__/
