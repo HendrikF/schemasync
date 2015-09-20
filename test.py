@@ -20,9 +20,7 @@ dialect = PostgreSQL(dbapi, connection)
 schemasync = Schemasync(dialect)
 
 changesets = []
-def changeset(func):
-    changesets.append(func)
-    return func
+changeset = changesets.append
 
 from schemasync.changes import *
 from schemasync.definitions import *
