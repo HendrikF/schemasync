@@ -21,4 +21,4 @@ class AddColumns:
 class DropColumns:
     def __init__(self, tableName, columnNames):
         self.tableName = tableName
-        seld.columnNames = columnNames
+        self.columnNames = columnNames

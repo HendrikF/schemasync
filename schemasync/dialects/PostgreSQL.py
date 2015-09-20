@@ -31,6 +31,7 @@ class PostgreSQL(Dialect):
     columnTypes = {
         'auto': 'serial',
         'varchar': 'character varying',
+        'datetime': 'timestamp without time zone',
     }
     
     log = logging.getLogger('schemasync.dialect.postgresql')
@@ -134,6 +135,35 @@ class PostgreSQL(Dialect):
                     sql += constraints
                     sql = sql.strip(',\n')
                     sql += '\n);'
+                
+                elif isinstance(change, RenameTable):
+                    self.log.info('Renaming Table')
+                    sql = 'ALTER TABLE "{0}" RENAME TO "{1}";'.format(change.oldName, change.newName)
+                
+                elif isinstance(change, DropTable):
+                    self.log.info('Dropping Table')
+                    sql = 'DROP TABLE "{0}";'.format(change.tableName)
+                
+                elif isinstance(change, AddColumns):
+                    self.log.info('Adding Columns')
+                    constraints = ''
+                    for column in change.columns:
+                        sql += 'ALTER TABLE "{0}" ADD COLUMN "{1}" {2}'.format(change.tableName, column.name, self.mapColumnType(column.type))
+                        if column.length:
+                            sql += ' ({0})'.format(column.length)
+                        if not column.null:
+                            sql += ' NOT NULL'
+                        if column.primaryKey:
+                            constraints += 'ALTER TABLE "{0}" ADD CONSTRAINT "{1}_{2}_pkey" PRIMARY KEY ("{2}");\n'.format(change.tableName, column.name)
+                        if column.unique:
+                            constraints += 'ALTER TABLE "{0}" ADD CONSTRAINT "{1}_{2}_key" UNIQUE ("{2}");\n'.format(change.tableName, column.name)
+                        sql += ';\n'
+                        sql += constraints
+                
+                elif isinstance(change, DropColumns):
+                    self.log.info('Dropping Columns')
+                    for column in change.columnNames:
+                        sql += 'ALTER TABLE "{0}" DROP COLUMN "{1}";\n'.format(change.tableName, column)
                 
                 else:
                     raise UnknownChangeError('Change {0} of changeset {1} is not a known change!'.format(change, changeSet.__name__))
