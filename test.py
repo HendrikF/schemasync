@@ -59,4 +59,19 @@ def testOtherChanges():
     yield DropColumns('temp', ('firstname', 'lastname'))
     yield DropTable('temp')
 
+@changeset
+def renameColumn():
+    yield RenameColumn('employee', 'streetNo', 'streetno')
+
+@changeset
+def createHibernateSequence():
+    yield CreateSequence('hibernate_seuqence', minValue=100, incrementBy=3)
+
+# If you have errors like this typo in your changesets,
+# then do not modify the changeset, but add another changeset.
+# This is because the corrected changeset will not be executed again.
+@changeset
+def fixTypoInHibernateSequence():
+    yield RenameSequence('hibernate_seuqence', 'hibernate_sequence')
+
 schemasync.process(changesets)

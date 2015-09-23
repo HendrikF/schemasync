@@ -45,6 +45,12 @@ class PostgreSQL(Dialect):
     def datetime():
         return time.strftime('%Y-%m-%d %H:%M:%S')
     
+    @staticmethod
+    def tableName(schemaName, tableName):
+        if schemaName:
+            return schemaName + '.' + tableName
+        return tableName
+    
     def __init__(self, dbapi, connection):
         self.dbapi = dbapi
         self.c = connection
@@ -111,7 +117,7 @@ class PostgreSQL(Dialect):
                 
                 if isinstance(change, CreateTable):
                     self.log.info('Creating Table')
-                    sql = 'CREATE TABLE "{0}"\n(\n'.format(change.tableName)
+                    sql = 'CREATE TABLE "{0}"\n(\n'.format(self.tableName(change.schemaName, change.tableName))
                     constraints = ''
                     # columns
                     for column in change.columns:
@@ -138,32 +144,60 @@ class PostgreSQL(Dialect):
                 
                 elif isinstance(change, RenameTable):
                     self.log.info('Renaming Table')
-                    sql = 'ALTER TABLE "{0}" RENAME TO "{1}";'.format(change.oldName, change.newName)
+                    sql = 'ALTER TABLE "{0}" RENAME TO "{1}";'.format(self.tableName(change.oldSchemaName, change.oldName), change.newName)
+                    if change.oldSchemaName != change.newSchemaName  and ((change.oldSchemaName is None) ^ (change.newSchemaName is None)):
+                        sql += '\nALTER TABLE "{0}" SET SCHEMA "{0}";'.format(self.tableName(change.oldSchemaName, change.newTableName), change.newSchemaName)
                 
                 elif isinstance(change, DropTable):
                     self.log.info('Dropping Table')
-                    sql = 'DROP TABLE "{0}";'.format(change.tableName)
+                    sql = 'DROP TABLE "{0}";'.format(self.tableName(change.schemaName, change.tableName))
                 
                 elif isinstance(change, AddColumns):
                     self.log.info('Adding Columns')
                     constraints = ''
+                    tableName = self.tableName(change.schemaName, change.tableName)
                     for column in change.columns:
-                        sql += 'ALTER TABLE "{0}" ADD COLUMN "{1}" {2}'.format(change.tableName, column.name, self.mapColumnType(column.type))
+                        sql += 'ALTER TABLE "{0}" ADD COLUMN "{1}" {2}'.format(tableName, column.name, self.mapColumnType(column.type))
                         if column.length:
-                            sql += ' ({0})'.format(column.length)
+                            sql += '({0})'.format(column.length)
                         if not column.null:
                             sql += ' NOT NULL'
                         if column.primaryKey:
-                            constraints += 'ALTER TABLE "{0}" ADD CONSTRAINT "{1}_{2}_pkey" PRIMARY KEY ("{2}");\n'.format(change.tableName, column.name)
+                            constraints += 'ALTER TABLE "{0}" ADD CONSTRAINT "{1}_{2}_pkey" PRIMARY KEY ("{2}");\n'.format(tableName, change.tableName, column.name)
                         if column.unique:
-                            constraints += 'ALTER TABLE "{0}" ADD CONSTRAINT "{1}_{2}_key" UNIQUE ("{2}");\n'.format(change.tableName, column.name)
+                            constraints += 'ALTER TABLE "{0}" ADD CONSTRAINT "{1}_{2}_key" UNIQUE ("{2}");\n'.format(tableName, change.tableName, column.name)
                         sql += ';\n'
                         sql += constraints
                 
                 elif isinstance(change, DropColumns):
                     self.log.info('Dropping Columns')
                     for column in change.columnNames:
-                        sql += 'ALTER TABLE "{0}" DROP COLUMN "{1}";\n'.format(change.tableName, column)
+                        sql += 'ALTER TABLE "{0}" DROP COLUMN "{1}";\n'.format(self.tableName(change.schemaName, change.tableName), column)
+                
+                elif isinstance(change, RenameColumn):
+                    self.log.info('Renaming Column')
+                    sql = 'ALTER TABLE "{0}" RENAME "{1}" TO "{2}";'.format(self.tableName(change.schemaName, change.tableName), change.oldColumnName, change.newColumnName)
+                
+                elif isinstance(change, CreateSequence):
+                    self.log.info('Creating Sequence')
+                    sql = 'CREATE SEQUENCE "{0}"'.format(self.tableName(change.schemaName, change.sequenceName))
+                    if change.cycle:
+                        sql += ' CYCLE'
+                    if change.incrementBy is not None:
+                        sql += ' INCREMENT {0}'.format(change.incrementBy)
+                    if change.startValue is not None:
+                        sql += ' START {0}'.format(change.startValue)
+                    if change.minValue is not None:
+                        sql += ' MINVALUE {0}'.format(change.minValue)
+                    if change.maxValue is not None:
+                        sql += ' MAXVALUE {0}'.format(change.maxValue)
+                    sql += ';'
+                
+                elif isinstance(change, RenameSequence):
+                    self.log.info('Renaming Sequence')
+                    sql = 'ALTER SEQUENCE "{0}" RENAME TO "{1}";'.format(self.tableName(change.oldSchemaName, change.oldSequenceName), change.newSequenceName)
+                    if change.oldSchemaName != change.newSchemaName and ((change.oldSchemaName is None) ^ (change.newSchemaName is None)):
+                        sql += '\nALTER SEQUENCE "{0}" SET SCHEMA "{1}";'.format(self.tableName(change.oldSchemaName, change.newSequenceName), change.newSchemaName)
                 
                 else:
                     raise UnknownChangeError('Change {0} of changeset {1} is not a known change!'.format(change, changeSet.__name__))
