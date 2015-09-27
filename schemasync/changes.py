@@ -6,9 +6,14 @@ class CreateTable:
         self.schemaName = schemaName
 
 class RenameTable:
-    def __init__(self, oldName, newName, *, oldSchemaName=None, newSchemaName=None):
-        self.oldName = oldName
-        self.newName = newName
+    def __init__(self, oldTableName, newTableName, *, schemaName=None):
+        self.oldTableName = oldTableName
+        self.newTableName = newTableName
+        self.schemaName = schemaName
+
+class MoveTable:
+    def __init__(self, tableName, oldSchemaName, newSchemaName):
+        self.tableName = tableName
         self.oldSchemaName = oldSchemaName
         self.newSchemaName = newSchemaName
 
@@ -50,8 +55,18 @@ class CreateSequence:
         self.startValue = startValue
 
 class RenameSequence:
-    def __init__(self, oldSequenceName, newSequenceName, *, oldSchemaName=None, newSchemaName=None):
+    def __init__(self, oldSequenceName, newSequenceName, *, schemaName=None):
         self.oldSequenceName = oldSequenceName
         self.newSequenceName = newSequenceName
+        self.schemaName = schemaName
+
+class MoveSequence:
+    def __init__(self, sequenceName, oldSchemaName, newSchemaName):
+        self.sequenceName = sequenceName
         self.oldSchemaName = oldSchemaName
         self.newSchemaName = newSchemaName
+
+class DropSequence:
+    def __init__(self, sequenceName, *, schemaName=None):
+        self.sequenceName = sequenceName
+        self.schemaName = schemaName

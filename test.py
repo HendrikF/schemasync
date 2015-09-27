@@ -56,7 +56,7 @@ def testOtherChanges():
         Column('test', 'varchar', 200),
         Column('birthday', 'datetime'),
     ])
-    yield DropColumns('temp', ('firstname', 'lastname'))
+    yield DropColumns('temp', ['firstname', 'lastname'])
     yield DropTable('temp')
 
 @changeset

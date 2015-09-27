@@ -144,9 +144,11 @@ class PostgreSQL(Dialect):
                 
                 elif isinstance(change, RenameTable):
                     self.log.info('Renaming Table')
-                    sql = 'ALTER TABLE "{0}" RENAME TO "{1}";'.format(self.tableName(change.oldSchemaName, change.oldName), change.newName)
-                    if change.oldSchemaName != change.newSchemaName  and ((change.oldSchemaName is None) ^ (change.newSchemaName is None)):
-                        sql += '\nALTER TABLE "{0}" SET SCHEMA "{0}";'.format(self.tableName(change.oldSchemaName, change.newTableName), change.newSchemaName)
+                    sql = 'ALTER TABLE "{0}" RENAME TO "{1}";'.format(self.tableName(change.schemaName, change.oldTableName), change.newTableName)
+                
+                elif isinstance(change, MoveTable):
+                    self.log.info('Moving Table')
+                    sql = 'ALTER TABLE "{0}" SET SCHEMA "{0}";'.format(self.tableName(change.oldSchemaName, change.tableName), change.newSchemaName)
                 
                 elif isinstance(change, DropTable):
                     self.log.info('Dropping Table')
@@ -195,9 +197,15 @@ class PostgreSQL(Dialect):
                 
                 elif isinstance(change, RenameSequence):
                     self.log.info('Renaming Sequence')
-                    sql = 'ALTER SEQUENCE "{0}" RENAME TO "{1}";'.format(self.tableName(change.oldSchemaName, change.oldSequenceName), change.newSequenceName)
-                    if change.oldSchemaName != change.newSchemaName and ((change.oldSchemaName is None) ^ (change.newSchemaName is None)):
-                        sql += '\nALTER SEQUENCE "{0}" SET SCHEMA "{1}";'.format(self.tableName(change.oldSchemaName, change.newSequenceName), change.newSchemaName)
+                    sql = 'ALTER SEQUENCE "{0}" RENAME TO "{1}";'.format(self.tableName(change.schemaName, change.oldSequenceName), change.newSequenceName)
+                
+                elif isinstance(change, MoveSequence):
+                    self.log.info('Moving Sequence')
+                    sql = 'ALTER SEQUENCE "{0}" SET SCHEMA "{1}";'.format(self.tableName(change.oldSchemaName, change.sequenceName), change.newSchemaName)
+                
+                elif isinstance(change, DropSequence):
+                    self.log.info('Dropping Sequence')
+                    sql = 'DROP SEQUENCE "{0}";'.format(self.tableName(change.schemaName, change.sequenceName))
                 
                 else:
                     raise UnknownChangeError('Change {0} of changeset {1} is not a known change!'.format(change, changeSet.__name__))
