@@ -203,6 +203,23 @@ class PostgreSQL(Dialect):
                     self.log.info('Moving Sequence')
                     sql = 'ALTER SEQUENCE "{0}" SET SCHEMA "{1}";'.format(self.tableName(change.oldSchemaName, change.sequenceName), change.newSchemaName)
                 
+                elif isinstance(change, AlterSequence):
+                    self.log.info('Altering Sequence')
+                    sql = 'ALTER SEQUENCE "{0}"'.format(self.tableName(change.schemaName, change.sequenceName))
+                    if change.cycle is not None:
+                        if not change.cycle:
+                            sql += ' NO'
+                        sql += ' CYCLE'
+                    if change.incrementBy is not None:
+                        sql += ' INCREMENT {0}'.format(change.incrementBy)
+                    if change.minValue is not None:
+                        sql += ' MINVALUE {0}'.format(change.minValue)
+                    if change.maxValue is not None:
+                        sql += ' MAXVALUE {0}'.format(change.maxValue)
+                    sql += ';'
+                    if change.startValue is not None:
+                        sql += "\nSELECT setval('{0}', {1}, true);".format(self.tableName(change.schemaName, change.sequenceName), change.startValue)
+                
                 elif isinstance(change, DropSequence):
                     self.log.info('Dropping Sequence')
                     sql = 'DROP SEQUENCE "{0}";'.format(self.tableName(change.schemaName, change.sequenceName))

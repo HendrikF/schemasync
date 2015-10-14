@@ -66,6 +66,19 @@ class MoveSequence:
         self.oldSchemaName = oldSchemaName
         self.newSchemaName = newSchemaName
 
+class AlterSequence:
+    def __init__(self, sequenceName, *, schemaName=None, cycle=None, 
+            incrementBy=None, maxValue=None, minValue=None, ordered=None, startValue=None):
+        self.sequenceName = sequenceName
+        self.schemaName = schemaName
+        self.cycle = cycle
+        self.incrementBy = incrementBy
+        self.maxValue = maxValue
+        self.minValue = minValue
+        self.ordered = ordered
+        self.sequenceName = sequenceName
+        self.startValue = startValue
+
 class DropSequence:
     def __init__(self, sequenceName, *, schemaName=None):
         self.sequenceName = sequenceName
